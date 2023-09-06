@@ -20,7 +20,6 @@ velocyto run10x -m /n/scratch3/users/y/yuj626/mm10/mm10_rmsk.gtf -@ 4 --samtools
 
 conda deactivate 
 
-
 ################## Step0: load sample1 #############
 
 import scanpy as sc
@@ -74,11 +73,14 @@ import cellrank as cr
 import numpy as np
 import pandas as pd
 import anndata as ad
+
 scv.settings.verbosity = 3
 scv.settings.set_figure_params('scvelo', facecolor='white', dpi=100, frameon=False)
 cr.settings.verbosity = 2
+
 adata = sc.read_h5ad('peri_ct3.h5ad')
-ldata = scv.read('SC-Crescent.loom', cache=True)
+ldata = scv.read('peri_ct3.loom', cache=True)
+
 # rename barcodes in order to merge:
 barcodes = [bc.split(':')[1] for bc in ldata.obs.index.tolist()]
 barcodes = [bc[0:len(bc)-1] + '_10' for bc in barcodes]
@@ -92,11 +94,11 @@ print(len(common_obs), len(common_vars))
 adata = scv.utils.merge(adata, ldata)
 
 # plot umap to check
-sc.pl.umap(adata, color='seurat_clusters', frameon=False, legend_loc='on data', title='', save='Fibroblast_celltypes.svg')
+sc.pl.umap(adata, color='seurat_clusters', frameon=False, legend_loc='on data', title='', save='umap.pdf')
 
 ############## Step 2: Computing RNA velocity using scVelo ################
 
-scv.pl.proportions(adata, groupby='seurat_clusters',save='Fibroblast_proportions.svg')
+scv.pl.proportions(adata, groupby='seurat_clusters',save='proportions.pdf')
 
 # pre-process
 scv.pp.filter_and_normalize(adata)
@@ -107,8 +109,8 @@ scv.tl.velocity(adata, mode='stochastic')
 scv.tl.velocity_graph(adata)
 
 #Visualize velocity fields
-scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='Fibro_embedding.pdf')
-scv.pl.velocity_embedding_grid(adata, basis='umap', color='seurat_clusters', save='Fibro_embedding_grid.svg', title='', scale=0.25)
-scv.pl.velocity_embedding_stream(adata, basis='umap', color=['seurat_clusters'], save='Fibro_embedding_stream.svg', title='')
+scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='embedding.pdf')
+scv.pl.velocity_embedding_grid(adata, basis='umap', color='seurat_clusters', save='embedding_grid.pdf', title='', scale=0.25)
+scv.pl.velocity_embedding_stream(adata, basis='umap', color=['seurat_clusters'], save='embedding_stream.pdf', title='')
 scv.tl.velocity_pseudotime(adata)
-scv.pl.scatter(adata, color='velocity_pseudotime', cmap='gnuplot', save='Fibro_velocity_pseudotime1.svg')
+scv.pl.scatter(adata, color='velocity_pseudotime', cmap='gnuplot', save='velocity_pseudotime.pdf')
