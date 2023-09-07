@@ -1,0 +1,115 @@
+#!/bin/bash
+
+#SBATCH -o hostname_%j.out
+#SBATCH -e hostname_%j.err
+
+# 定义样本路径和样本列表
+SAMPLE_DIR="/n/scratch3/users/y/yuj626"
+REF_DIR="/n/scratch3/users/y/yuj626/mm10"
+SAMPLES=("peri_ct3" "peri_ko1")  # 添加更多的样本名到这个列表
+
+# 加载所需的模块和环境
+module load gcc/6.2.0
+module load conda2/4.2.13
+module load python/3.6.0
+module load samtools/1.9
+source activate yuj626
+
+# 使用循环来处理每一个样本
+for SAMPLE in ${SAMPLES[@]}; do
+    velocyto run10x -m ${REF_DIR}/mm10_rmsk.gtf -@ 4 --samtools-memory 7000 ${SAMPLE_DIR}/${SAMPLE} ${REF_DIR}/ref.genes.gtf
+done
+
+conda deactivate 
+
+
+
+
+import scanpy as sc
+import scvelo as scv
+import anndata
+from scipy import io
+import os
+import pandas as pd
+
+SAMPLE_DIR = "/n/scratch3/users/y/yuj626/velo/yizhong"
+
+def load_and_preprocess(sample_name):
+    sample_path = os.path.join(SAMPLE_DIR, sample_name)
+
+    # load sparse matrix:
+    X = io.mmread(os.path.join(sample_path, "scVelo_counts.mtx"))
+
+    # create anndata object
+    adata = anndata.AnnData(X=X.transpose().tocsr())
+
+    # load cell metadata:
+    cell_meta = pd.read_csv(os.path.join(sample_path, "scVelo_metadata.csv"))
+
+    # load gene names:
+    with open(os.path.join(sample_path, "scVelo_gene_names.csv"), 'r') as f:
+        gene_names = f.read().splitlines()
+
+    # set anndata observations and index obs by barcodes, var by gene names
+    adata.obs = cell_meta
+    adata.obs.index = adata.obs['barcode']
+    adata.var.index = gene_names
+
+    # load dimensional reduction:
+    pca = pd.read_csv(os.path.join(sample_path, "scVelo_pca.csv"))
+    pca.index = adata.obs.index
+
+    # set pca and umap
+    adata.obsm['X_pca'] = pca.to_numpy()
+    adata.obsm['X_umap'] = np.vstack((adata.obs['UMAP_1'].to_numpy(), adata.obs['UMAP_2'].to_numpy())).T
+
+    # save dataset as anndata format
+    output_name = os.path.join(sample_path, f"{sample_name}.h5ad")
+    adata.write(output_name)
+
+    # reload dataset to ensure consistency
+    adata = sc.read_h5ad(output_name)
+
+    return adata
+
+def compute_velocity(adata):
+    ldata_path = os.path.splitext(adata.filename)[0] + ".loom"
+    ldata = scv.read(ldata_path, cache=True)
+
+    # rename barcodes in order to merge:
+    barcodes = [bc.split(':')[1] for bc in ldata.obs.index.tolist()]
+    barcodes = [bc[0:len(bc)-1] + '_10' for bc in barcodes]
+    ldata.obs.index = barcodes
+    ldata.var_names_make_unique()
+    scv.utils.clean_obs_names(adata)
+    scv.utils.clean_obs_names(ldata)
+
+    common_obs = adata.obs_names.intersection(ldata.obs_names)
+    common_vars = adata.var_names.intersection(ldata.var_names)
+    print(len(common_obs), len(common_vars))
+    adata = scv.utils.merge(adata, ldata)
+
+    # plot umap to check
+    sc.pl.umap(adata, color='seurat_clusters', frameon=False, legend_loc='on data', title='', save='umap.pdf')
+
+    # Remaining velocity computation steps...
+    scv.pl.proportions(adata, groupby='seurat_clusters')
+    scv.pp.filter_and_normalize(adata)
+    scv.pp.moments(adata)
+    scv.tl.velocity(adata, mode='stochastic')
+    scv.tl.velocity_graph(adata)
+
+    # Visualization
+    scv.pl.velocity_embedding(adata, basis='umap', frameon=False)
+    scv.pl.velocity_embedding_grid(adata, basis='umap', color='seurat_clusters', title='', scale=0.25)
+    scv.pl.velocity_embedding_stream(adata, basis='umap', color=['seurat_clusters'])
+    scv.tl.velocity_pseudotime(adata)
+    scv.pl.scatter(adata, color='velocity_pseudotime', cmap='gnuplot')
+
+def main():
+    for sample in SAMPLES:
+        data = load_and_preprocess(sample)
+        compute_velocity(data)
+
+if __name__ == "__main__":
+    main()
