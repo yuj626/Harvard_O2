@@ -1,0 +1,12 @@
+module load gcc/6.2.0 
+module load conda2/4.2.13 
+module load python/2.7.12 
+module load sratoolkit/3.0.2 
+module load samtools 
+module load bowtie2 
+module load homer 
+
+findMotifs.pl Crip1.fa fasta ./  -find mm10_allmotif.motif > Crip1.outputfile.txt 
+findMotifs.pl Dmp1_Peak2.fa fasta ./  -find mm10_allmotif.motif > Dmp1_Peak2.outputfile.txt 
+findMotifs.pl Fgf23_Peak1.fa fasta ./  -find mm10_allmotif.motif > Fgf23_Peak1.outputfile.txt 
+findMotifs.pl Fgf23_Peak2.fa fasta ./  -find mm10_allmotif.motif > Fgf23_Peak2.outputfile.txt 
