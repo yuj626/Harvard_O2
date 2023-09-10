@@ -1,11 +1,10 @@
-# login
-ssh yuj626@o2.hms.harvard.edu
+# path
+cd /n/scratch3/users/y/yuj626/ 
 
-# 1. Start an interactive job (resources: 12 hour, 16GB of memory, and 1 cpu)
-srun --pty -p interactive -t 0-12:00 --mem 16G -c 1 bash
 
-# 2. Load R/4.1.2
-module load gcc/9.2.0 R/4.1.2
+# login code  
+ssh yuj626@o2.hms.harvard.edu 
 
-# 3. Start R
-R
+
+# computer code  
+srun --pty -p interactive -t 0-2:30 --mem 8G /bin/bash 
