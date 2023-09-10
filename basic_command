@@ -1,5 +1,3 @@
-# path
-cd /n/scratch3/users/y/yuj626/ 
 
 
 # login code  
@@ -8,3 +6,6 @@ ssh yuj626@o2.hms.harvard.edu
 
 # computer code  
 srun --pty -p interactive -t 0-2:30 --mem 8G /bin/bash 
+
+# path
+cd /n/scratch3/users/y/yuj626/ 
