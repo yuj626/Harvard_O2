@@ -41,7 +41,7 @@ module load R/4.0.1
 
 source activate yuj626_cellphonedb
 
-cellphonedb method statistical_analysis cellphonedb_meta_anno.txt cellphonedb_count_hu.txt --subsampling --subsampling-log true --threads=4 --project-name=mac_hep --output-path=cellphonedb --counts-data=gene_name
+cellphonedb method statistical_analysis cellphonedb_meta.txt cellphonedb_count_hu.txt --subsampling --subsampling-log true --threads=4 --project-name=mac_hep --output-path=cellphonedb --counts-data=gene_name
 
 
 cellphonedb plot dot_plot --means-path ./cellphonedb/mac_hep/means.txt --pvalues-path ./cellphonedb/mac_hep/pvalues.txt --rows ./cellphonedb/mac_hep/raws.picked.txt --columns ./cellphonedb/mac_hep/cols.txt --output-name picked.pdf
