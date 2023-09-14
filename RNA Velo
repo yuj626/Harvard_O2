@@ -89,35 +89,6 @@ scv.pp.moments(adata)
 scv.tl.velocity(adata, mode='stochastic')
 scv.tl.velocity_graph(adata)
 
-
->>> scv.tl.velocity_graph(adata)
-computing velocity graph (using 1/32 cores)
-  0%|          | 0/8181 [00:00<?, ?cells/s]
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "/home/yuj626/.conda/envs/yuj626/lib/python3.11/site-packages/scvelo/tools/velocity_graph.py", line 363, in velocity_graph
-    vgraph.compute_cosines(n_jobs=n_jobs, backend=backend)
-  File "/home/yuj626/.conda/envs/yuj626/lib/python3.11/site-packages/scvelo/tools/velocity_graph.py", line 175, in compute_cosines
-    res = parallelize(
-          ^^^^^^^^^^^^
-  File "/home/yuj626/.conda/envs/yuj626/lib/python3.11/site-packages/scvelo/core/_parallelize.py", line 138, in wrapper
-    res = np.array(res) if as_array else res
-          ^^^^^^^^^^^^^
-ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 2 dimensions. The detected shape was (1, 4) + inhomogeneous part.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Part 2.1: Visualize velocity fields
 scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='Fibro_embedding.pdf')
 scv.pl.velocity_embedding_grid(adata, basis='umap', color='seurat_clusters', save='Fibro_embedding_grid.svg', title='', scale=0.25)
