@@ -78,7 +78,10 @@ print(len(common_obs), len(common_vars))
 adata = scv.utils.merge(adata, ldata)
 
 # plot umap to check
-sc.pl.umap(adata, color='seurat_clusters', frameon=False, legend_loc='on data', title='', save='Fibroblast_celltypes.svg')
+adata.obs['seurat_clusters'] = adata.obs['seurat_clusters'].astype('category')
+scv.pl.proportions(adata, groupby='seurat_clusters', save='Fibroblast_proportions.svg')
+
+
 
 Part 2: Computing RNA velocity using scVelo
 scv.pl.proportions(adata, groupby='seurat_clusters',save='Fibroblast_proportions.svg')
