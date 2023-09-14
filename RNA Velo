@@ -8,6 +8,14 @@ source activate yuj626
 velocyto run10x -m /n/scratch3/users/y/yuj626/mm10/mm10_rmsk.gtf -@ 4 --samtools-memory 7000 /n/scratch3/users/y/yuj626/scRNA/qian/KOM3_4 /n/scratch3/users/y/yuj626/mm10/ref.genes.gtf
 conda deactivate 
 
+
+module load gcc/6.2.0
+module load conda2/4.2.13
+module load python/3.6.0
+module load samtools/1.9
+source activate yuj626
+
+python
 import scanpy as sc
 import anndata
 from scipy import io
@@ -15,23 +23,21 @@ from scipy.sparse import coo_matrix, csr_matrix
 import numpy as np
 import os
 import pandas as pd
-
-
 # load sparse matrix:
-X = io.mmread("Crescent.counts.mtx")
+X = io.mmread("scVelo_counts.mtx")
 # create anndata object
 adata = anndata.AnnData(X=X.transpose().tocsr())
 # load cell metadata:
-cell_meta = pd.read_csv("metadata.Crescent.csv")
+cell_meta = pd.read_csv("scVelo_metadata.csv")
 # load gene names:
-with open("gene_names.Crescent.csv", 'r') as f:
+with open("scVelo_gene_names.csv", 'r') as f:
     gene_names = f.read().splitlines()
 # set anndata observations and index obs by barcodes, var by gene names
 adata.obs = cell_meta
 adata.obs.index = adata.obs['barcode']
 adata.var.index = gene_names
 # load dimensional reduction:
-pca = pd.read_csv("Crescent.pca.csv")
+pca = pd.read_csv("scVelo_pca.csv")
 pca.index = adata.obs.index
 # set pca and umap
 adata.obsm['X_pca'] = pca.to_numpy()
@@ -39,10 +45,10 @@ adata.obsm['X_umap'] = np.vstack((adata.obs['UMAP_1'].to_numpy(), adata.obs['UMA
 # plot a UMAP colored by sampleID to test:
 sc.pl.umap(adata, color=['seurat_clusters'], frameon=False, save=True)
 # save dataset as anndata format
-adata.write('Crescent.h5ad')
+adata.write('ko_m3.h5ad')
 
 # reload dataset
-adata = sc.read_h5ad('Crescent.h5ad')
+adata = sc.read_h5ad('ko_m3.h5ad')
 
 
 Step 1: Load data
@@ -53,12 +59,11 @@ import numpy as np
 import pandas as pd
 import anndata as ad
 
-
 scv.settings.verbosity = 3
 scv.settings.set_figure_params('scvelo', facecolor='white', dpi=100, frameon=False)
 cr.settings.verbosity = 2
-adata = sc.read_h5ad('Crescent.h5ad')
-ldata = scv.read('SC-Crescent.loom', cache=True)
+adata = sc.read_h5ad('ko_m3.h5ad')
+ldata = scv.read('ko_m3.loom', cache=True)
 
 # rename barcodes in order to merge:
 barcodes = [bc.split(':')[1] for bc in ldata.obs.index.tolist()]
@@ -83,6 +88,35 @@ scv.pp.moments(adata)
 # compute velocity
 scv.tl.velocity(adata, mode='stochastic')
 scv.tl.velocity_graph(adata)
+
+
+>>> scv.tl.velocity_graph(adata)
+computing velocity graph (using 1/32 cores)
+  0%|          | 0/8181 [00:00<?, ?cells/s]
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/yuj626/.conda/envs/yuj626/lib/python3.11/site-packages/scvelo/tools/velocity_graph.py", line 363, in velocity_graph
+    vgraph.compute_cosines(n_jobs=n_jobs, backend=backend)
+  File "/home/yuj626/.conda/envs/yuj626/lib/python3.11/site-packages/scvelo/tools/velocity_graph.py", line 175, in compute_cosines
+    res = parallelize(
+          ^^^^^^^^^^^^
+  File "/home/yuj626/.conda/envs/yuj626/lib/python3.11/site-packages/scvelo/core/_parallelize.py", line 138, in wrapper
+    res = np.array(res) if as_array else res
+          ^^^^^^^^^^^^^
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 2 dimensions. The detected shape was (1, 4) + inhomogeneous part.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Part 2.1: Visualize velocity fields
 scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='Fibro_embedding.pdf')
