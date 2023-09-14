@@ -1,138 +1,97 @@
 #### O2 
 
-module load conda2/4.2.13 
-source activate yuj626 
-repeats="/n/scratch3/users/y/yuj626/mm10/mm10_rmsk.gtf" 
-transcriptome="/n/scratch3/users/y/yuj626/mm10/ref.genes.gtf" 
-cellranger_output=""
-velocyto run -m $repeats $cellranger_output $transcriptome 
-conda deactivate 
-
-
-
-
 module load gcc/6.2.0
 module load conda2/4.2.13
 module load python/3.6.0
 module load samtools/1.9
 source activate yuj626
 velocyto run10x -m /n/scratch3/users/y/yuj626/mm10/mm10_rmsk.gtf -@ 4 --samtools-memory 7000 /n/scratch3/users/y/yuj626/scRNA/qian/KOM3_4 /n/scratch3/users/y/yuj626/mm10/ref.genes.gtf
-velocyto run10x -m /n/scratch3/users/y/yuj626/mm10/mm10_rmsk.gtf -@ 4 --samtools-memory 7000 /n/scratch3/users/y/yuj626/scRNA/qian/CTM2_2 /n/scratch3/users/y/yuj626/mm10/ref.genes.gtf
 conda deactivate 
 
+import scanpy as sc
+import anndata
+from scipy import io
+from scipy.sparse import coo_matrix, csr_matrix
+import numpy as np
+import os
+import pandas as pd
 
 
-Python3  
+# load sparse matrix:
+X = io.mmread("Crescent.counts.mtx")
+# create anndata object
+adata = anndata.AnnData(X=X.transpose().tocsr())
+# load cell metadata:
+cell_meta = pd.read_csv("metadata.Crescent.csv")
+# load gene names:
+with open("gene_names.Crescent.csv", 'r') as f:
+    gene_names = f.read().splitlines()
+# set anndata observations and index obs by barcodes, var by gene names
+adata.obs = cell_meta
+adata.obs.index = adata.obs['barcode']
+adata.var.index = gene_names
+# load dimensional reduction:
+pca = pd.read_csv("Crescent.pca.csv")
+pca.index = adata.obs.index
+# set pca and umap
+adata.obsm['X_pca'] = pca.to_numpy()
+adata.obsm['X_umap'] = np.vstack((adata.obs['UMAP_1'].to_numpy(), adata.obs['UMAP_2'].to_numpy())).T
+# plot a UMAP colored by sampleID to test:
+sc.pl.umap(adata, color=['seurat_clusters'], frameon=False, save=True)
+# save dataset as anndata format
+adata.write('Crescent.h5ad')
 
-import scanpy as sc 
-import anndata 
-from scipy import io 
-from scipy.sparse import coo_matrix, csr_matrix 
-import numpy as np 
-import os 
-import pandas as pd 
-
-# load sparse matrix: 
-X = io.mmread("/n/scratch3/users/y/yuj626/velo/yizhong/peri_ct3/scVelo_counts.mtx") 
-
-# create anndata object 
-adata = anndata.AnnData( 
-    X=X.transpose().tocsr() 
-) 
-
-# load cell metadata: 
-cell_meta = pd.read_csv("/n/scratch3/users/y/yuj626/velo/yizhong/peri_ct3/scVelo_metadata.csv") 
-
-# load gene names: 
-with open("/n/scratch3/users/y/yuj626/velo/yizhong/peri_ct3/scVelo_gene_names.csv", 'r') as f: gene_names = f.read().splitlines() 
-
-# set anndata observations and index obs by barcodes, var by gene names 
-adata.obs = cell_meta 
-adata.obs.index = adata.obs['barcode'] 
-adata.var.index = gene_names 
-
-# load dimensional reduction: 
-pca = pd.read_csv("/n/scratch3/users/y/yuj626/velo/yizhong/peri_ct3/scVelo_pca.csv") 
-pca.index = adata.obs.index 
-  
-# set pca and umap 
-adata.obsm['X_pca'] = pca.to_numpy() 
-adata.obsm['X_umap'] = np.vstack((adata.obs['UMAP_1'].to_numpy(), adata.obs['UMAP_2'].to_numpy())).T 
-
-# plot a UMAP colored by sampleID to test: 
-sc.pl.umap(adata, color=['SampleID'], frameon=False, save=True) 
-
-# save dataset as anndata format 
-adata.write('my_data.h5ad') 
+# reload dataset
+adata = sc.read_h5ad('Crescent.h5ad')
 
 
-# reload dataset 
-adata = sc.read_h5ad('my_data.h5ad') 
-Exit() 
+Step 1: Load data
+import scvelo as scv
+import scanpy as sc
+import cellrank as cr
+import numpy as np
+import pandas as pd
+import anndata as ad
 
 
-cd /n/scratch3/users/y/yuj626/ 
-module load conda2/4.2.13 
-source activate yuj626 
-python3 
-import scanpy as sc 
-import scvelo as scv 
-scv.settings.verbosity = 3 
-scv.settings.set_figure_params('scvelo', facecolor='white', dpi=100, frameon=False) 
+scv.settings.verbosity = 3
+scv.settings.set_figure_params('scvelo', facecolor='white', dpi=100, frameon=False)
+cr.settings.verbosity = 2
+adata = sc.read_h5ad('Crescent.h5ad')
+ldata = scv.read('SC-Crescent.loom', cache=True)
 
-# Load h5ad file 
-adata = sc.read_h5ad('peri_ct3.h5ad') 
+# rename barcodes in order to merge:
+barcodes = [bc.split(':')[1] for bc in ldata.obs.index.tolist()]
+barcodes = [bc[0:len(bc)-1] + '_10' for bc in barcodes]
+ldata.obs.index = barcodes
+ldata.var_names_make_unique()
+scv.utils.clean_obs_names(adata)
+scv.utils.clean_obs_names(ldata)
+common_obs = adata.obs_names.intersection(ldata.obs_names)
+common_vars = adata.var_names.intersection(ldata.var_names)
+print(len(common_obs), len(common_vars))
+adata = scv.utils.merge(adata, ldata)
 
-# Load the loom file for spliced/unspliced matrices: 
-ldata = scv.read('peri_ct3.loom', cache=True) 
+# plot umap to check
+sc.pl.umap(adata, color='seurat_clusters', frameon=False, legend_loc='on data', title='', save='Fibroblast_celltypes.svg')
 
-# Ensure unique variable names to avoid any potential merging conflicts 
-ldata.var_names_make_unique() 
+Part 2: Computing RNA velocity using scVelo
+scv.pl.proportions(adata, groupby='seurat_clusters',save='Fibroblast_proportions.svg')
+# pre-process
+scv.pp.filter_and_normalize(adata)
+scv.pp.moments(adata)
+# compute velocity
+scv.tl.velocity(adata, mode='stochastic')
+scv.tl.velocity_graph(adata)
 
-# If you need to rename barcodes to match the format in adata, you can use a similar approach: 
-barcodes = [bc.split(':')[1] for bc in ldata.obs.index.tolist()] 
-barcodes = [bc[:-1] + '_11' for bc in barcodes] 
-ldata.obs.index = barcodes 
+Part 2.1: Visualize velocity fields
+scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='Fibro_embedding.pdf')
+scv.pl.velocity_embedding_grid(adata, basis='umap', color='seurat_clusters', save='Fibro_embedding_grid.svg', title='', scale=0.25)
+scv.pl.velocity_embedding_stream(adata, basis='umap', color=['seurat_clusters'], save='Fibro_embedding_stream.svg', title='')
+scv.tl.velocity_pseudotime(adata)
+scv.pl.scatter(adata, color='velocity_pseudotime', cmap='gnuplot', save='Fibro_velocity_pseudotime1.svg')
+adata.write('Fibro_scVelo.h5ad')
 
-# Merge the loom data into the original adata object(bug) 
-#adata = scv.utils.merge(adata, ldata) 
 
-# Rename obs names of ldata to avoid conflict during concatenation 
-ldata.obs_names = [name + '_ldata' for name in ldata.obs_names] 
-
-# Concatenate adata and ldata 
-combined_adata = adata.concatenate(ldata, join='outer') 
-
-# Plot UMAP to check 
-sc.pl.umap(combined_adata, color='seurat_clusters', frameon=False, legend_loc='on data', title='', save='_celltypes.pdf') 
-combined_adata.obs['seurat_clusters'].fillna(-1, inplace=True) 
-sc.pl.umap(combined_adata, color='seurat_clusters',save='_pl.pdf') 
-import matplotlib.pyplot as plt 
-spliced = combined_adata.layers['spliced'].sum() 
-unspliced = combined_adata.layers['unspliced'].sum() 
-
-# Check if ambiguous layer exists 
-if 'ambiguous' in combined_adata.layers: 
-ambiguous = combined_adata.layers['ambiguous'].sum() 
-proportions = [spliced, unspliced, ambiguous] 
-labels = ['Spliced', 'Unspliced', 'Ambiguous'] 
-else: 
-proportions = [spliced, unspliced] 
-labels = ['Spliced', 'Unspliced'] 
-
-plt.pie(proportions, labels=labels, autopct='%1.1f%%') 
-plt.title('Proportions of Spliced/Unspliced/Ambiguous counts') 
-plt.savefig('figures/_pl_alternative.pdf') 
-combined_adata.obs['seurat_clusters'] = combined_adata.obs['seurat_clusters'].astype('category') 
-scv.pl.proportions(combined_adata, groupby='seurat_clusters', save='_pl.pdf') 
-
-# pre-process  
-scv.pp.filter_and_normalize(combined_adata)  
-scv.pp.moments(combined_adata) 
-
-# compute velocity 
-scv.tl.velocity(combined_adata, mode='stochastic')  
-scv.tl.velocity_graph(combined_adata) 
-
- 
+adata.write('Fibro_scVelo.h5ad')
  
