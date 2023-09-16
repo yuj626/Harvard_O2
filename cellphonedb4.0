@@ -1,0 +1,14 @@
+import pandas as pd
+import sys
+import os
+pd.set_option('display.max_columns', 100)
+os.chdir('/n/scratch3/users/y/yuj626/cellphonedbenv')
+print(sys.version)
+
+cpdb_file_path = 'v4.1.0/cellphonedb.zip'
+  
+meta_file_path = '/n/scratch3/users/y/yuj626/cellphonedb/yuchen/cellphonedb_metadata.tsv'
+  
+counts_file_path = '/n/scratch3/users/y/yuj626/cellphonedb/yuchen/cellphonedb_metadata.tsv'
+  
+out_path = '/n/scratch3/users/y/yuj626/cellphonedb/yuchen'
