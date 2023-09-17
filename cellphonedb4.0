@@ -12,3 +12,20 @@ meta_file_path = '/n/scratch3/users/y/yuj626/cellphonedb/yuchen/cellphonedb_meta
 counts_file_path = '/n/scratch3/users/y/yuj626/cellphonedb/yuchen/cellphonedb_metadata.tsv'
   
 out_path = '/n/scratch3/users/y/yuj626/cellphonedb/yuchen'
+
+
+
+## h5ad
+
+import scanpy as sc
+import anndata
+
+# 读取10x Genomics数据
+adata = sc.read_10x_mtx(
+    '/n/scratch3/users/y/yuj626/cellphonedb/yuchen/Yap',  # 替换为您的数据文件夹路径
+    var_names='gene_symbols',             # 使用基因符号为特征名称
+    cache=True                          # 使用缓存以加速数据的后续读取
+)
+
+# 保存为.h5ad格式
+adata.write('/n/scratch3/users/y/yuj626/cellphonedb/yuchen/Yapnormalised_log_counts.h5ad')  
