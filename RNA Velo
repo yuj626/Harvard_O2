@@ -78,12 +78,12 @@ print(len(common_obs), len(common_vars))
 adata = scv.utils.merge(adata, ldata)
 
 # plot umap to check
-scv.pl.proportions(adata, groupby='idents', save='Fibroblast_proportions.svg')
+scv.pl.proportions(adata, groupby='idents', save='proportions.svg')
 
 
 
 Part 2: Computing RNA velocity using scVelo
-scv.pl.proportions(adata, groupby='idents',save='Fibroblast_proportions.svg')
+scv.pl.proportions(adata, groupby='idents',save='proportions.svg')
 # pre-process
 scv.pp.filter_and_normalize(adata)
 scv.pp.moments(adata)
@@ -92,13 +92,13 @@ scv.tl.velocity(adata, mode='stochastic')
 scv.tl.velocity_graph(adata)
 
 Part 2.1: Visualize velocity fields
-scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='Fibro_embedding.pdf')
-scv.pl.velocity_embedding_grid(adata, basis='umap', color=['idents'], save='Fibro_embedding_grid.svg', title='', scale=0.25)
-scv.pl.velocity_embedding_stream(adata, basis='umap', color=['idents'], save='Fibro_embedding_stream.svg', title='')
+scv.pl.velocity_embedding(adata, basis='umap', frameon=False, save='embedding.pdf')
+scv.pl.velocity_embedding_grid(adata, basis='umap', color=['idents'], save='embedding_grid.svg', title='', scale=0.25)
+scv.pl.velocity_embedding_stream(adata, basis='umap', color=['idents'], save='embedding_stream.svg', title='')
 scv.tl.velocity_pseudotime(adata)
-scv.pl.scatter(adata, color='velocity_pseudotime', cmap='gnuplot', save='Fibro_velocity_pseudotime1.svg')
-adata.write('Fibro_scVelo.h5ad')
+scv.pl.scatter(adata, color='velocity_pseudotime', cmap='gnuplot', save='velocity_pseudotime1.svg')
+adata.write('scVelo.h5ad')
 
 
-adata.write('Fibro_scVelo.h5ad')
+adata.write('scVelo.h5ad')
  
