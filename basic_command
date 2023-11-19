@@ -9,3 +9,4 @@ srun --pty -p interactive -t 0-2:30 --mem 16G -c 1 /bin/bash
 
 # path
 cd /n/scratch3/users/y/yuj626/ 
+cd /n/scratch3/users/y/yuj626/velo/guoyan/np
